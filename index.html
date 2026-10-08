@@ -10,11 +10,9 @@
         // 🎁 COLOQUE AQUI OS SEUS PRESENTES 🎁
         // Basta adicionar novos itens seguindo o exemplo abaixo:
         let listaPresentes = [
-            { id: 1, nome: "Jogo de Panelas Antiaderentes", link: "https://www.loja.com/panelas" },
-            { id: 2, nome: "Airfryer 4 Litros", link: "https://www.loja.com/airfryer" },
-            { id: 3, nome: "Liquidificador Turbo", link: "https://www.loja.com/liquidificador" },
-            { id: 4, nome: "Jogo de Cama Casal 400 Fios", link: "https://www.loja.com/cama" },
-            { id: 5, nome: "Aparelho de Jantar 30 Peças", link: "https://www.loja.com/jantar" }
+            { id: 1, nome: "Boleira de vidro", link: "https://www.mercadolivre.com.br/p/MLB75692325?pdp_filters=item_id:MLB7461778360&matt_tool=38524122#origin=share&sid=share&wid=MLB7461778360&action=copy" },
+            { id: 2, nome: "Airfryer 4 Litros", link: "https://www.mercadolivre.com.br/p/MLB46098247?pdp_filters=item_id:MLB3995338569&matt_tool=38524122#origin=share&sid=share&wid=MLB3995338569&action=copy" },
+            
         ];
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -81,7 +79,7 @@
             const nomeConvidado = prompt("Por favor, digite o seu nome para sabermos quem deu o presente:");
             if (!nomeConvidado || nomeConvidado.trim() === "") return;
 
-            let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5519999999999";
+            let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5516974077006";
             const numero = whatsappNoivo.replace(/\D/g, '');
             const texto = encodeURIComponent(`Olá! Eu sou o(a) ${nomeConvidado} e acabei de escolher o presente "${nomeProduto}" para o casamento de vocês! 💍✨`);
             
