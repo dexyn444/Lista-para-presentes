@@ -4,104 +4,49 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Casamento - Nossos Presentes</title>
-    <!-- Tailwind CSS para um design moderno e responsivo -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-stone-50 text-stone-800 font-sans min-h-screen flex flex-col justify-between">
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    <!-- Cabeçalho -->
-    <header class="bg-white shadow-sm py-6 px-4 text-center border-b border-stone-200 relative">
-        <h1 class="text-3xl font-serif text-stone-700 tracking-wide">Lista de Casamento</h1>
-        <p class="text-stone-500 mt-1">Sua presença é o nosso maior presente, mas se quiser nos mimar, escolha um item abaixo!</p>
-        
-        <!-- Botão oculto para os noivos acessarem o painel -->
-        <div id="painel-acesso-noivos" class="hidden mt-4 flex justify-center gap-2">
-            <button onclick="alternarVisao('convite')" id="btn-convite" class="px-4 py-2 rounded-full text-sm font-medium transition bg-stone-800 text-white shadow">Ver Lista (Convidados)</button>
-            <button onclick="alternarVisao('admin')" id="btn-admin" class="px-4 py-2 rounded-full text-sm font-medium transition bg-stone-200 text-stone-700 hover:bg-stone-300">Painel dos Noivos</button>
-        </div>
-    </header>
+        // ⚠️ COLE AS SUAS CONFIGURAÇÕES DO FIREBASE AQUI ⚠️
+        const firebaseConfig = {
+  apiKey: "AIzaSyB0y3djMYfLmmUDIHtd768cRcXPit4G7fM",
+  authDomain: "lista-casamento-754e2.firebaseapp.com",
+  projectId: "lista-casamento-754e2",
+  storageBucket: "lista-casamento-754e2.firebasestorage.app",
+  messagingSenderId: "828434946373",
+  appId: "1:828434946373:web:8419b597d39282f0d4062c",
+  measurementId: "G-DWS1JMWGRR"
+};x
 
-    <!-- Conteúdo Principal -->
-    <main class="max-w-4xl w-full mx-auto p-4 sm:p-6 flex-grow">
+        // Inicializar Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        <!-- ABA DOS CONVIDADOS (Padrão para todos) -->
-        <section id="secao-convite">
-            <div class="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <h2 class="text-xl font-serif text-stone-700">Presentes Disponíveis</h2>
-                <input type="text" id="busca" oninput="filtrarPresentes()" placeholder="Buscar presente..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-stone-500">
-            </div>
-
-            <div id="lista-presentes" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <!-- Os itens serão injetados aqui via JavaScript -->
-            </div>
-        </section>
-
-        <!-- ABA DE ADMINISTRAÇÃO (Exclusiva dos Noivos) -->
-        <section id="secao-admin" class="hidden">
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-8">
-                <h2 class="text-xl font-serif text-stone-700 mb-4">Adicionar Novo Presente</h2>
-                <form id="form-presente" onsubmit="adicionarPresente(event)" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-medium text-stone-600 mb-1">Nome do Produto</label>
-                        <input type="text" id="nome-produto" required placeholder="Ex: Jogo de Panelas Antiaderentes" class="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-stone-600 mb-1">Link do Produto (Loja)</label>
-                        <input type="url" id="link-produto" required placeholder="https://www.loja.com/produto" class="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-stone-600 mb-1">Seu Número de WhatsApp (com DDD para avisos)</label>
-                        <input type="text" id="whatsapp-noivo" placeholder="Ex: 5519999999999" class="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500">
-                        <p class="text-xs text-stone-400 mt-1">Insira com DDI (55) e DDD. Ex: 5511988888888</p>
-                    </div>
-                    <button type="submit" class="w-full bg-stone-800 text-white py-2 rounded-lg font-medium hover:bg-stone-700 transition">Adicionar à Lista</button>
-                </form>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
-                <h2 class="text-xl font-serif text-stone-700 mb-4">Gerenciar Presentes Cadastrados</h2>
-                <div id="lista-admin" class="space-y-3">
-                    <!-- Gerenciamento via JS -->
-                </div>
-            </div>
-        </section>
-
-    </main>
-
-    <!-- Rodapé -->
-    <footer class="text-center py-6 text-xs text-stone-400 border-t border-stone-200 mt-8">
-        Feito com ❤️ para o nosso grande dia. 
-        <span id="link-secreto" class="block mt-1"><a href="?admin=true" class="text-stone-300 hover:text-stone-500">Área dos Noivos</a></span>
-    </footer>
-
-    <!-- Lógica em JavaScript -->
-    <script>
-        let presentes = JSON.parse(localStorage.getItem('lista_casamento')) || [
-            { id: 1, nome: "Cafeteira Elétrica", link: "https://mercadolivre.com.br", comprado: false, comprador: "" },
-            { id: 2, nome: "Jogo de Jantar 42 Peças", link: "https://amazon.com.br", comprado: false, comprador: "" }
-        ];
-
-        let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5519999999999";
-        
-        // Verifica se o link tem o parâmetro secreto para liberar o painel dos noivos
+        // Verificar se é Admin (?admin=true)
         const urlParams = new URLSearchParams(window.location.search);
         const ehAdmin = urlParams.has('admin');
-
         if (ehAdmin) {
             document.getElementById('painel-acesso-noivos').classList.remove('hidden');
+        }
+
+        let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5519999999999";
+        if(document.getElementById('whatsapp-noivo')) {
             document.getElementById('whatsapp-noivo').value = whatsappNoivo;
         }
 
-        function salvarDados() {
-            localStorage.setItem('lista_casamento', JSON.stringify(presentes));
-            const inputWhatsapp = document.getElementById('whatsapp-noivo');
-            if (inputWhatsapp) {
-                whatsappNoivo = inputWhatsapp.value;
-                localStorage.setItem('whatsapp_noivo', whatsappNoivo);
-            }
+        // Salvar número do WhatsApp
+        window.salvarWhatsapp = function() {
+            whatsappNoivo = document.getElementById('whatsapp-noivo').value;
+            localStorage.setItem('whatsapp_noivo', whatsappNoivo);
+            alert('Número do WhatsApp salvo!');
         }
 
-        function alternarVisao(aba) {
+        // Alternar abas de Admin
+        window.alternarVisao = function(aba) {
             const secConvite = document.getElementById('secao-convite');
             const secAdmin = document.getElementById('secao-admin');
             const btnConvite = document.getElementById('btn-convite');
@@ -112,7 +57,6 @@
                 secAdmin.classList.add('hidden');
                 btnConvite.className = "px-4 py-2 rounded-full text-sm font-medium transition bg-stone-800 text-white shadow";
                 btnAdmin.className = "px-4 py-2 rounded-full text-sm font-medium transition bg-stone-200 text-stone-700 hover:bg-stone-300";
-                renderizarConvite();
             } else {
                 secAdmin.classList.remove('hidden');
                 secConvite.classList.add('hidden');
@@ -122,11 +66,25 @@
             }
         }
 
-        function renderizarConvite(filtro = "") {
+        // Escutar alterações em tempo real do Banco de Dados
+        let listaGlobal = [];
+        onSnapshot(collection(db, "presentes"), (snapshot) => {
+            listaGlobal = [];
+            snapshot.forEach((docSnap) => {
+                listaGlobal.push({ id: docSnap.id, ...docSnap.data() });
+            });
+            renderizarConvite();
+            if (ehAdmin && !document.getElementById('secao-admin').classList.contains('hidden')) {
+                renderizarAdmin();
+            }
+        });
+
+        // Renderizar Lista para os Convidados
+        window.renderizarConvite = function(filtro = "") {
             const container = document.getElementById('lista-presentes');
             container.innerHTML = "";
 
-            const filtrados = presentes.filter(p => p.nome.toLowerCase().includes(filtro.toLowerCase()));
+            const filtrados = listaGlobal.filter(p => p.nome.toLowerCase().includes(filtro.toLowerCase()));
 
             if (filtrados.length === 0) {
                 container.innerHTML = `<p class="text-stone-400 col-span-2 text-center py-8">Nenhum presente encontrado.</p>`;
@@ -151,8 +109,8 @@
                     </div>
                     <div>
                         ${p.comprado 
-                            ? `<p class="text-xs text-stone-500 italic">Presenteado por ${p.comprador || 'um invitado'}.</p>`
-                            : `<button onclick="comprarItem(${p.id})" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm py-2 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2">
+                            ? `<p class="text-xs text-stone-500 italic">Presenteado por ${p.comprador || 'um convidado'}.</p>`
+                            : `<button onclick="comprarItem('${p.id}', '${p.nome}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm py-2 px-4 rounded-lg font-medium transition flex items-center justify-center gap-2">
                                 🎁 Presentear (Avisar no WhatsApp)
                                </button>`
                         }
@@ -162,82 +120,160 @@
             });
         }
 
-        function renderizarAdmin() {
+        // Renderizar Painel Admin
+        window.renderizarAdmin = function() {
             const container = document.getElementById('lista-admin');
             container.innerHTML = "";
 
-            if (presentes.length === 0) {
+            if (listaGlobal.length === 0) {
                 container.innerHTML = `<p class="text-stone-400 text-sm">Nenhum presente cadastrado ainda.</p>`;
                 return;
             }
 
-            presentes.forEach(p => {
+            listaGlobal.forEach(p => {
                 const item = document.createElement('div');
                 item.className = "flex items-center justify-between p-3 border border-stone-200 rounded-lg text-sm bg-stone-50";
                 item.innerHTML = `
                     <div>
                         <span class="font-medium">${p.nome}</span>
-                        <span class="text-xs text-stone-400 block">${p.comprado ? 'Status: Comprado por ' + (p.comprador || 'Anônimo') : 'Status: Disponível'}</span>
+                        <span class="text-xs text-stone-400 block">${p.comprado ? 'Comprado por: ' + (p.comprador || 'Anônimo') : 'Status: Disponível'}</span>
                     </div>
-                    <button onclick="removerItem(${p.id})" class="text-rose-600 hover:text-rose-800 text-xs font-medium px-2 py-1">Excluir</button>
+                    <button onclick="removerItem('${p.id}')" class="text-rose-600 hover:text-rose-800 text-xs font-medium px-2 py-1">Excluir</button>
                 `;
                 container.appendChild(item);
             });
         }
 
-        function adicionarPresente(e) {
+        // Adicionar Presente
+        window.adicionarPresente = async function(e) {
             e.preventDefault();
             const nome = document.getElementById('nome-produto').value;
             const link = document.getElementById('link-produto').value;
 
-            const novoItem = {
-                id: Date.now(),
-                nome: nome,
-                link: link,
-                comprado: false,
-                comprador: ""
-            };
-
-            presentes.push(novoItem);
-            salvarDados();
-            document.getElementById('form-presente').reset();
-            document.getElementById('whatsapp-noivo').value = whatsappNoivo;
-            alert('Presente adicionado com sucesso!');
-            renderizarAdmin();
-        }
-
-        function removerItem(id) {
-            if (confirm('Deseja realmente excluir este presente?')) {
-                presentes = presentes.filter(p => p.id !== id);
-                salvarDados();
-                renderizarAdmin();
+            try {
+                await addDoc(collection(db, "presentes"), {
+                    nome: nome,
+                    link: link,
+                    comprado: false,
+                    comprador: ""
+                });
+                document.getElementById('form-presente').reset();
+                alert('Presente adicionado com sucesso!');
+            } catch (error) {
+                console.error("Erro ao adicionar:", error);
+                alert('Erro ao adicionar o presente.');
             }
         }
 
-        function comprarItem(id) {
+        // Remover Presente
+        window.removerItem = async function(id) {
+            if (confirm('Deseja realmente excluir este presente?')) {
+                try {
+                    await deleteDoc(doc(db, "presentes", id));
+                } catch (error) {
+                    console.error("Erro ao excluir:", error);
+                }
+            }
+        }
+
+        // Comprar/Reservar Item
+        window.comprarItem = async function(id, nomeProduto) {
             const nomeConvidado = prompt("Por favor, digite o seu nome para sabermos quem deu o presente:");
             if (!nomeConvidado) return;
 
-            const produto = presentes.find(p => p.id === id);
-            if (produto) {
-                produto.comprado = true;
-                produto.comprador = nomeConvidado;
-                salvarDados();
-                renderizarConvite();
+            try {
+                const itemRef = doc(db, "presentes", id);
+                await updateDoc(itemRef, {
+                    comprado: true,
+                    comprador: nomeConvidado
+                });
 
                 const numero = whatsappNoivo.replace(/\D/g, '');
-                const texto = encodeURIComponent(`Olá! Eu sou o(a) ${nomeConvidado} e acabei de escolher/comprar o presente "${produto.nome}" para o casamento de vocês! 💍✨`);
+                const texto = encodeURIComponent(`Olá! Eu sou o(a) ${nomeConvidado} e acabei de escolher/comprar o presente "${nomeProduto}" para o casamento de vocês! 💍✨`);
                 
                 window.open(`https://api.whatsapp.com/send?phone=${numero}&text=${texto}`, '_blank');
+            } catch (error) {
+                console.error("Erro ao atualizar:", error);
+                alert('Erro ao registrar a compra.');
             }
         }
 
-        function filtrarPresentes() {
+        window.filtrarPresentes = function() {
             const termo = document.getElementById('busca').value;
             renderizarConvite(termo);
         }
-
-        renderizarConvite();
     </script>
+</head>
+<body class="bg-stone-50 text-stone-800 font-sans min-h-screen flex flex-col justify-between">
+
+    <!-- Cabeçalho -->
+    <header class="bg-white shadow-sm py-6 px-4 text-center border-b border-stone-200 relative">
+        <h1 class="text-3xl font-serif text-stone-700 tracking-wide">Lista de Casamento</h1>
+        <p class="text-stone-500 mt-1">Sua presença é o nosso maior presente, mas se quiser nos mimar, escolha um item abaixo!</p>
+        
+        <!-- Painel Admin (Oculto para convidados, aparece com ?admin=true) -->
+        <div id="painel-acesso-noivos" class="hidden mt-4 flex justify-center gap-2">
+            <button onclick="alternarVisao('convite')" id="btn-convite" class="px-4 py-2 rounded-full text-sm font-medium transition bg-stone-800 text-white shadow">Ver Lista (Convidados)</button>
+            <button onclick="alternarVisao('admin')" id="btn-admin" class="px-4 py-2 rounded-full text-sm font-medium transition bg-stone-200 text-stone-700 hover:bg-stone-300">Painel dos Noivos</button>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="max-w-4xl w-full mx-auto p-4 sm:p-6 flex-grow">
+
+        <!-- ABA DOS CONVIDADOS -->
+        <section id="secao-convite">
+            <div class="mb-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+                <h2 class="text-xl font-serif text-stone-700">Presentes Disponíveis</h2>
+                <input type="text" id="busca" oninput="filtrarPresentes()" placeholder="Buscar presente..." class="px-4 py-2 border border-stone-300 rounded-lg text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-stone-500">
+            </div>
+
+            <div id="lista-presentes" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Carregado via Firebase -->
+            </div>
+        </section>
+
+        <!-- ABA DE ADMINISTRAÇÃO -->
+        <section id="secao-admin" class="hidden">
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200 mb-8">
+                <h2 class="text-xl font-serif text-stone-700 mb-4">Configurações & Cadastros</h2>
+                
+                <div class="mb-6 pb-6 border-b border-stone-100">
+                    <label class="block text-sm font-medium text-stone-600 mb-1">Seu Número de WhatsApp (com DDD para avisos)</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="whatsapp-noivo" placeholder="Ex: 5519999999999" class="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 text-sm">
+                        <button onclick="salvarWhatsapp()" class="bg-stone-700 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-stone-800">Salvar</button>
+                    </div>
+                </div>
+
+                <h3 class="text-lg font-medium text-stone-700 mb-3">Adicionar Novo Presente</h3>
+                <form id="form-presente" onsubmit="adicionarPresente(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-stone-600 mb-1">Nome do Produto</label>
+                        <input type="text" id="nome-produto" required placeholder="Ex: Jogo de Panelas Antiaderentes" class="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-stone-600 mb-1">Link do Produto (Loja)</label>
+                        <input type="url" id="link-produto" required placeholder="https://www.loja.com/produto" class="w-full px-4 py-2 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-stone-500 text-sm">
+                    </div>
+                    <button type="submit" class="w-full bg-stone-800 text-white py-2 rounded-lg font-medium hover:bg-stone-700 transition text-sm">Adicionar à Lista</button>
+                </form>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-stone-200">
+                <h2 class="text-xl font-serif text-stone-700 mb-4">Gerenciar Presentes Cadastrados</h2>
+                <div id="lista-admin" class="space-y-3">
+                    <!-- Gerenciamento via Firebase -->
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="text-center py-6 text-xs text-stone-400 border-t border-stone-200 mt-8">
+        Feito com ❤️ para o nosso grande dia.
+    </footer>
+
 </body>
 </html>
