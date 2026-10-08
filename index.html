@@ -9,40 +9,71 @@
     <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, updateDoc, deleteDoc, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // ⚠️ COLE AS SUAS CONFIGURAÇÕES DO FIREBASE AQUI ⚠️
         const firebaseConfig = {
-  apiKey: "AIzaSyB0y3djMYfLmmUDIHtd768cRcXPit4G7fM",
-  authDomain: "lista-casamento-754e2.firebaseapp.com",
-  projectId: "lista-casamento-754e2",
-  storageBucket: "lista-casamento-754e2.firebasestorage.app",
-  messagingSenderId: "828434946373",
-  appId: "1:828434946373:web:8419b597d39282f0d4062c",
-  measurementId: "G-DWS1JMWGRR"
-};x
+            apiKey: "SUA_API_KEY",
+            authDomain: "SEU_PROJETO.firebaseapp.com",
+            projectId: "SEU_PROJECT_ID",
+            storageBucket: "SEU_PROJETO.appspot.com",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
 
-        // Inicializar Firebase
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        let db = null;
+        let listaGlobal = [];
 
-        // Verificar se é Admin (?admin=true)
+        // Inicializar Firebase de forma segura
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getFirestore(app);
+
+            // Escutar alterações em tempo real do Banco de Dados
+            onSnapshot(collection(db, "presentes"), (snapshot) => {
+                listaGlobal = [];
+                snapshot.forEach((docSnap) => {
+                    listaGlobal.push({ id: docSnap.id, ...docSnap.data() });
+                });
+                renderizarConvite();
+                const secAdmin = document.getElementById('secao-admin');
+                if (secAdmin && !secAdmin.classList.contains('hidden')) {
+                    renderizarAdmin();
+                }
+            }, (error) => {
+                console.error("Erro ao escutar Firestore (Verifique as regras do banco):", error);
+            });
+        } catch (error) {
+            console.error("Erro ao inicializar Firebase (Verifique suas chaves):", error);
+        }
+
+        // Exibir painel admin imediatamente se a URL tiver ?admin=true
         const urlParams = new URLSearchParams(window.location.search);
         const ehAdmin = urlParams.has('admin');
-        if (ehAdmin) {
-            document.getElementById('painel-acesso-noivos').classList.remove('hidden');
-        }
+        
+        window.addEventListener('DOMContentLoaded', () => {
+            if (ehAdmin) {
+                const painelAcesso = document.getElementById('painel-acesso-noivos');
+                if (painelAcesso) painelAcesso.classList.remove('hidden');
+            }
 
-        let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5519999999999";
-        if(document.getElementById('whatsapp-noivo')) {
-            document.getElementById('whatsapp-noivo').value = whatsappNoivo;
-        }
+            let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5519999999999";
+            const inputWhatsapp = document.getElementById('whatsapp-noivo');
+            if(inputWhatsapp) {
+                inputWhatsapp.value = whatsappNoivo;
+            }
+            
+            // Renderiza estado inicial vazio caso demore a carregar
+            renderizarConvite();
+        });
 
         // Salvar número do WhatsApp
         window.salvarWhatsapp = function() {
-            whatsappNoivo = document.getElementById('whatsapp-noivo').value;
-            localStorage.setItem('whatsapp_noivo', whatsappNoivo);
-            alert('Número do WhatsApp salvo!');
+            const input = document.getElementById('whatsapp-noivo');
+            if (input) {
+                localStorage.setItem('whatsapp_noivo', input.value);
+                alert('Número do WhatsApp salvo!');
+            }
         }
 
         // Alternar abas de Admin
@@ -66,28 +97,16 @@
             }
         }
 
-        // Escutar alterações em tempo real do Banco de Dados
-        let listaGlobal = [];
-        onSnapshot(collection(db, "presentes"), (snapshot) => {
-            listaGlobal = [];
-            snapshot.forEach((docSnap) => {
-                listaGlobal.push({ id: docSnap.id, ...docSnap.data() });
-            });
-            renderizarConvite();
-            if (ehAdmin && !document.getElementById('secao-admin').classList.contains('hidden')) {
-                renderizarAdmin();
-            }
-        });
-
         // Renderizar Lista para os Convidados
         window.renderizarConvite = function(filtro = "") {
             const container = document.getElementById('lista-presentes');
+            if (!container) return;
             container.innerHTML = "";
 
             const filtrados = listaGlobal.filter(p => p.nome.toLowerCase().includes(filtro.toLowerCase()));
 
             if (filtrados.length === 0) {
-                container.innerHTML = `<p class="text-stone-400 col-span-2 text-center py-8">Nenhum presente encontrado.</p>`;
+                container.innerHTML = `<p class="text-stone-400 col-span-2 text-center py-8">Nenhum presente encontrado ou aguardando conexão com o banco...</p>`;
                 return;
             }
 
@@ -123,6 +142,7 @@
         // Renderizar Painel Admin
         window.renderizarAdmin = function() {
             const container = document.getElementById('lista-admin');
+            if (!container) return;
             container.innerHTML = "";
 
             if (listaGlobal.length === 0) {
@@ -147,6 +167,10 @@
         // Adicionar Presente
         window.adicionarPresente = async function(e) {
             e.preventDefault();
+            if (!db) {
+                alert('Erro: Banco de dados não conectado. Verifique suas chaves do Firebase.');
+                return;
+            }
             const nome = document.getElementById('nome-produto').value;
             const link = document.getElementById('link-produto').value;
 
@@ -161,12 +185,13 @@
                 alert('Presente adicionado com sucesso!');
             } catch (error) {
                 console.error("Erro ao adicionar:", error);
-                alert('Erro ao adicionar o presente.');
+                alert('Erro ao adicionar o presente. Verifique se o Firestore Database foi criado no modo de teste.');
             }
         }
 
         // Remover Presente
         window.removerItem = async function(id) {
+            if (!db) return;
             if (confirm('Deseja realmente excluir este presente?')) {
                 try {
                     await deleteDoc(doc(db, "presentes", id));
@@ -178,6 +203,10 @@
 
         // Comprar/Reservar Item
         window.comprarItem = async function(id, nomeProduto) {
+            if (!db) {
+                alert('Erro: Banco de dados não conectado.');
+                return;
+            }
             const nomeConvidado = prompt("Por favor, digite o seu nome para sabermos quem deu o presente:");
             if (!nomeConvidado) return;
 
@@ -188,6 +217,7 @@
                     comprador: nomeConvidado
                 });
 
+                let whatsappNoivo = localStorage.getItem('whatsapp_noivo') || "5519999999999";
                 const numero = whatsappNoivo.replace(/\D/g, '');
                 const texto = encodeURIComponent(`Olá! Eu sou o(a) ${nomeConvidado} e acabei de escolher/comprar o presente "${nomeProduto}" para o casamento de vocês! 💍✨`);
                 
